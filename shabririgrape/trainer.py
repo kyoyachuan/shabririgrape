@@ -1,8 +1,13 @@
+from numpy import ndarray
 import torch
 from torch import nn
 from tqdm import tqdm
+from sklearn.metrics import confusion_matrix
 
 from .model import get_model
+from .utils import convert_to_soft_label
+
+from . import MODEL_TYPE, DEVICE_TYPE
 
 
 def get_device() -> torch.device:
@@ -12,7 +17,7 @@ def get_device() -> torch.device:
     Returns:
         torch.device: device
     """
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = DEVICE_TYPE.CUDA if torch.cuda.is_available() else DEVICE_TYPE.CPU
     print("Using {} device".format(device))
     return device
 
@@ -31,7 +36,7 @@ def get_loss(loss: str) -> nn.Module:
     Returns:
         nn.Module: loss function
     """
-    if loss == 'cross_entropy':
+    if loss == MODEL_TYPE.CROSS_ENTROPY:
         return nn.CrossEntropyLoss()
     else:
         raise ValueError(f'Not included loss {loss}')
@@ -55,9 +60,9 @@ def get_optimizer(optimizer: str, model: nn.Module, lr: float, weight_decay: flo
     Returns:
         nn.optim.Optimizer: optimizer
     """
-    if optimizer == 'adam':
+    if optimizer == MODEL_TYPE.ADAM:
         return torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    elif optimizer == 'sgd':
+    elif optimizer == MODEL_TYPE.SGD:
         return torch.optim.SGD(model.parameters(), lr=lr, weight_decay=weight_decay)
     else:
         raise ValueError(f'Not included optimizer {optimizer}')
@@ -72,6 +77,25 @@ class LossAndAccCollector:
         self.test_loss = []
         self.train_acc = []
         self.test_acc = []
+        self.empty_test_data()
+
+    def empty_test_data(self):
+        """
+        Empty the test data
+        """
+        self.test_output = torch.tensor([])
+        self.test_target = torch.tensor([])
+
+    def add_test_data(self, output: torch.Tensor, target: torch.Tensor):
+        """
+        Add test data to the collector.
+
+        Args:
+            output (torch.Tensor): output
+            target (torch.Tensor): target
+        """
+        self.test_output = torch.cat((self.test_output, output))
+        self.test_target = torch.cat((self.test_target, target))
 
     def add(self, loss: float, accuracy: float):
         """
@@ -98,31 +122,40 @@ class LossAndAccCollector:
 
 class Trainer:
     def __init__(
-        self, model_name: str, activation: str, lr: float, optimizer: str = 'adam', loss: str = 'cross_entropy',
-        weight_decay: float = 0.0, **kwargs
+        self,
+        model_name: str,
+        pretrained_mode: str,
+        lr: float,
+        optimizer: str = MODEL_TYPE.ADAM,
+        loss: str = MODEL_TYPE.CROSS_ENTROPY,
+        weight_decay: float = 0.0,
+        use_soft_label: bool = False,
+        **kwargs
     ):
         """
         Initialize the trainer.
 
         Args:
             model_name (str): string of model name
-            activation (str): string of activation function
+            pretrained_mode (str): string of pretrained mode
             lr (float): learning rate
             optimizer (str): string of optimizer. Defaults to 'adam'.
             loss (str): string of loss function. Defaults to 'cross_entropy'.
             weight_decay (float, optional): weight decay. Defaults to 0.0.
+            use_soft_label (bool, optional): use soft label for ordinal regression. Defaults to False.
             **kwargs: keyword arguments
         """
         self.model_name = model_name
-        self.activation = activation
+        self.pretrained_mode = pretrained_mode
         self.loss = loss
         self.optimizer = optimizer
         self.lr = lr
         self.weight_decay = weight_decay
+        self.use_soft_label = use_soft_label
         self.collector = LossAndAccCollector()
 
         self.device = get_device()
-        self.model = get_model(model_name, self.activation, **kwargs).to(self.device)
+        self.model = get_model(model_name, pretrained_mode).to(self.device)
         self.loss_fn = get_loss(loss)
         self.optimizer = get_optimizer(optimizer, self.model, lr, weight_decay)
 
@@ -156,7 +189,7 @@ class Trainer:
                 data, target = data.to(self.device), target.to(self.device)
                 self.optimizer.zero_grad()
                 output = self.model(data)
-                loss = self.loss_fn(output, target)
+                loss = self.compute_loss(output, target)
                 accuracy = self.compute_accuracy(output, target)
                 loss.backward()
                 self.optimizer.step()
@@ -182,14 +215,15 @@ class Trainer:
         self.model.eval()
         val_loss = 0
         val_accuracy = 0
+        self.collector.empty_test_data()
         with torch.no_grad():
             for data, target in val_loader:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
-                val_loss += self.loss_fn(output, target).item()
-                val_accuracy += self.compute_accuracy(output, target)
+                val_loss += self.compute_loss(output, target).item()
+                self.collector.add_test_data(output, target)
         val_loss /= len(val_loader)
-        val_accuracy /= len(val_loader)
+        val_accuracy = self.compute_accuracy(self.collector.test_output, self.collector.test_target)
         self.collector.add_test(val_loss, val_accuracy)
         print('Testing set: Average loss: {:.4f}, Accuracy: ({:.2f}%)'.format(
             val_loss, 100 * val_accuracy))
@@ -208,3 +242,37 @@ class Trainer:
         pred = output.argmax(dim=1, keepdim=True)
         correct = pred.eq(target.view_as(pred)).sum().item()
         return correct / len(target)
+
+    def compute_loss(self, output: torch.Tensor, target: torch.Tensor) -> float:
+        """
+        Compute the loss.
+
+        Args:
+            output (torch.Tensor): output
+            target (torch.Tensor): target
+
+        Returns:
+            float: loss
+        """
+        if self.use_soft_label:
+            soft_target = convert_to_soft_label(target)
+            loss = self.loss_fn(output, soft_target)
+        else:
+            loss = self.loss_fn(output, target)
+        return loss
+
+    def compute_confusion_matrix(self, output: torch.Tensor, target: torch.Tensor) -> ndarray:
+        """
+        Compute the confusion matrix.
+
+        Args:
+            output (torch.Tensor): output
+            target (torch.Tensor): target
+
+        Returns:
+            ndarray: confusion matrix
+        """
+        pred = output.argmax(dim=1, keepdim=True).cpu().numpy()
+        gt = target.view_as(pred).cpu().numpy()
+        confusion_matrix = confusion_matrix(gt, pred, normalize='true')
+        return confusion_matrix

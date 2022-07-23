@@ -3,6 +3,7 @@ import pprint
 import tomli
 
 from .plot import plot_accuracy_curve_by_exp_group
+from . import ARTIFACTS, CONFIG
 
 
 class ExperimentCfg:
@@ -27,6 +28,7 @@ class ExperimentCfg:
         self.epochs = self.trainer.pop('epochs')
         self.batch_size = self.trainer.pop('batch_size')
         self.use_aug = self.trainer.pop('use_aug')
+        self.use_imbalanced_sampler = self.trainer.pop('use_imbalanced_sampler')
 
     def __repr__(self) -> str:
         """
@@ -50,8 +52,8 @@ class ExperimentGroup:
         """
         self.name = name
         self.params = default_params
-        self.exp_column = exp_params['experiment']
-        self.exp_value = exp_params['value']
+        self.exp_column = exp_params[CONFIG.EXPERIMENT]
+        self.exp_value = exp_params[CONFIG.EXPERIMENT_VALUE]
         self._exp_results = {}
         self._gen = self.__generate()
 
@@ -88,7 +90,10 @@ class ExperimentGroup:
             cfg[self.exp_column] = exp_param
             yield ExperimentCfg(cfg, name=self.name, exp_value=exp_param)
         else:
-            plot_accuracy_curve_by_exp_group(fname=f'result/{self.name}.png', title=self.name, **self._exp_results)
+            plot_accuracy_curve_by_exp_group(
+                fname=f'{ARTIFACTS.RESULT}/{ARTIFACTS.LEARNING_CURVE}_{self.name}{ARTIFACTS.IMG_EXT}',
+                title=self.name, **self._exp_results
+            )
             return StopIteration
 
     @property
@@ -135,14 +140,14 @@ class ExperimentManager:
         """
         def wrapper():
             for experiment in self.experiments:
-                if experiment['enable'] == True:
+                if experiment[CONFIG.ENABLE] == True:
                     self.set_experiment_group(experiment)
                     for exp in self.experiment_group:
                         pprint.pprint(exp)
                         self.experiment_group.results = function(exp)
-                    self.summary_result[experiment['name']] = dict()
+                    self.summary_result[experiment[CONFIG.EXPERIMENT_NAME]] = dict()
                     for key, value in self.experiment_group.results.items():
-                        self.summary_result[experiment['name']][key] = value[-1]
+                        self.summary_result[experiment[CONFIG.EXPERIMENT_NAME]][key] = value[-1]
             pprint.pprint(self.summary_result)
         return wrapper
 
@@ -164,9 +169,8 @@ class ExperimentManager:
         """
         Parse the configuration.
         """
-        self.experiments = self.config['experiment']
-        self.defaults = self.config['default']
-        self.specifics = self.config['specific']
+        self.experiments = self.config[CONFIG.EXPERIMENT]
+        self.defaults = self.config[CONFIG.DEFAULT]
 
     def set_experiment_group(self, experiment: dict):
         """
@@ -175,14 +179,13 @@ class ExperimentManager:
         Args:
             experiment (dict): experiment group
         """
-        name = experiment['name']
-        model_name = experiment['model_name']
-        default_params = self.defaults | self.specifics[model_name]
+        name = experiment[CONFIG.EXPERIMENT_NAME]
+        default_params = self.defaults
         for key in experiment.keys():
             if key in default_params:
                 default_params[key] = experiment[key]
         exp_params = {
-            'experiment': experiment['experiment'],
-            'value': experiment['value']
+            CONFIG.EXPERIMENT: experiment[CONFIG.EXPERIMENT],
+            CONFIG.EXPERIMENT_VALUE: experiment[CONFIG.EXPERIMENT_VALUE]
         }
         self.experiment_group = ExperimentGroup(name, default_params, exp_params)
