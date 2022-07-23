@@ -166,7 +166,7 @@ def gen_loader(
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=True if not use_imbalanced_sampler else False,
+        shuffle=False if use_imbalanced_sampler or mode == MODE.TEST else True,
         sampler=None if not use_imbalanced_sampler else ImbalancedDatasetSampler(dataset)
     )
 

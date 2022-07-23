@@ -3,7 +3,7 @@ model_name = "resnet50"
 pretrained_mode = "with"
 lr = 0.0001 
 weight_decay = 0.00001
-epochs = 3
+epochs = 30
 batch_size = 12
 use_aug = true
 use_imbalanced_sampler = false
@@ -11,7 +11,7 @@ use_soft_label = false
 
 [[experiment]]
 
-name = "ResNet18"
+name = "ResNet18_pretrained"
 enable = true
 model_name = "resnet18"
 experiment = "pretrained_mode"
@@ -19,7 +19,7 @@ value = ["with", "without", "fixed"]
 
 [[experiment]]
 
-name = "ResNet50"
+name = "ResNet50_pretrained"
 enable = true
 model_name = "resnet50"
 experiment = "pretrained_mode"

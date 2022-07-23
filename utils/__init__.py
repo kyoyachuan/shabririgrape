@@ -1,6 +1,6 @@
 class ARTIFACTS:
     RESULT = 'result'
-    MODEL = 'model'
+    MODEL = 'models'
 
     LEARNING_CURVE = 'learning_curve'
     CONFUSION_MATRIX = 'confusion_matrix'

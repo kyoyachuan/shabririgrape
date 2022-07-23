@@ -46,6 +46,6 @@ def plot_confusion_matrix(fname: str, title: str = '', cm: np.ndarray = None, cl
         classes (int, optional): num of classes. Defaults to None.
     """
     disp = ConfusionMatrixDisplay(cm, display_labels=np.arange(classes))
-    disp.plot(cmap='Blues', include_values=True)
+    disp.plot(cmap=plt.cm.Blues)
     disp.ax_.set_title(title)
     plt.savefig(fname, dpi=300, bbox_inches="tight")

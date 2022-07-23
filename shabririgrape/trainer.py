@@ -1,3 +1,4 @@
+import numpy as np
 from numpy import ndarray
 import torch
 from torch import nn
@@ -7,7 +8,7 @@ from sklearn.metrics import confusion_matrix
 from .model import get_model
 from .utils import convert_to_soft_label
 
-from . import MODEL_TYPE, DEVICE_TYPE
+from . import DATASET, MODEL_TYPE, DEVICE_TYPE
 
 
 def get_device() -> torch.device:
@@ -273,6 +274,6 @@ class Trainer:
             ndarray: confusion matrix
         """
         pred = output.argmax(dim=1, keepdim=True).cpu().numpy()
-        gt = target.view_as(pred).cpu().numpy()
-        confusion_matrix = confusion_matrix(gt, pred, normalize='true')
-        return confusion_matrix
+        gt = target.cpu().numpy()
+        cm = confusion_matrix(gt, pred, labels=np.arange(DATASET.NUM_CLASSES), normalize='true')
+        return cm

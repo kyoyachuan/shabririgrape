@@ -32,7 +32,9 @@ def main(cfg: ExperimentCfg) -> dict:
 
     experiment_name = f'{cfg.name}_{cfg.exp_value}'
 
-    confusion_matrix = trainer.compute_confusion_matrix()
+    confusion_matrix = trainer.compute_confusion_matrix(
+        trainer.collector.test_output, trainer.collector.test_target
+    )
     plot_confusion_matrix(
         f"{ARTIFACTS.RESULT}/{ARTIFACTS.CONFUSION_MATRIX}_{experiment_name}{ARTIFACTS.IMG_EXT}",
         experiment_name,
