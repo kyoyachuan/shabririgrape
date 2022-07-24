@@ -259,7 +259,7 @@ class Trainer:
             float: loss
         """
         if self.use_soft_label:
-            soft_target = convert_to_soft_label(target)
+            soft_target = convert_to_soft_label(target).to(self.device)
             loss = self.loss_fn(output, soft_target)
         else:
             loss = self.loss_fn(output, target)
