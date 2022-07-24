@@ -70,22 +70,25 @@ def get_optimizer(optimizer: str, model: nn.Module, lr: float, weight_decay: flo
 
 
 class LossAndAccCollector:
-    def __init__(self):
+    def __init__(self, device: torch.device):
         """
         Initialize the loss and acc collector.
+
+        Args:
+            device (torch.device): device
         """
         self.train_loss = []
         self.test_loss = []
         self.train_acc = []
         self.test_acc = []
-        self.empty_test_data()
+        self.empty_test_data(device)
 
-    def empty_test_data(self):
+    def empty_test_data(self, device: torch.device):
         """
         Empty the test data
         """
-        self.test_output = torch.tensor([])
-        self.test_target = torch.tensor([])
+        self.test_output = torch.tensor([]).to(device)
+        self.test_target = torch.tensor([]).to(device)
 
     def add_test_data(self, output: torch.Tensor, target: torch.Tensor):
         """
@@ -153,9 +156,9 @@ class Trainer:
         self.lr = lr
         self.weight_decay = weight_decay
         self.use_soft_label = use_soft_label
-        self.collector = LossAndAccCollector()
 
         self.device = get_device()
+        self.collector = LossAndAccCollector(self.device)
         self.model = get_model(model_name, pretrained_mode).to(self.device)
         self.loss_fn = get_loss(loss)
         self.optimizer = get_optimizer(optimizer, self.model, lr, weight_decay)
@@ -216,7 +219,7 @@ class Trainer:
         self.model.eval()
         val_loss = 0
         val_accuracy = 0
-        self.collector.empty_test_data()
+        self.collector.empty_test_data(self.device)
         with torch.no_grad():
             for data, target in val_loader:
                 data, target = data.to(self.device), target.to(self.device)
