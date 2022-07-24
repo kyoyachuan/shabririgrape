@@ -1,4 +1,5 @@
 import os
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -94,7 +95,7 @@ class RetinopathyDataset(Dataset):
         """
         return len(self.img_name)
 
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Get item from the dataset.
 

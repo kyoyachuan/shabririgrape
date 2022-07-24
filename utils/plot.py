@@ -1,9 +1,11 @@
+from typing import List
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 
 
-def plot_accuracy_curve_by_exp_group(fname: str, title: str = '', acc_line: list[float] = [.8, .82], **kwargs):
+def plot_accuracy_curve_by_exp_group(fname: str, title: str = '', acc_line: List[float] = [.8, .82], **kwargs):
     """
     Plot accuracy curve by experiment group.
 
