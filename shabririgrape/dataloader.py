@@ -3,14 +3,15 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from PIL import Image
 import torch
 from torch import tensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+from torchvision.io import read_image, ImageReadMode
 from torchsampler import ImbalancedDatasetSampler
 
 from . import DATASET, MODE
+from .trainer import get_device
 
 
 class DRContainer:
@@ -73,6 +74,7 @@ class RetinopathyDataset(Dataset):
         self.img_name = data_container.x
         self.label = tensor(data_container.y, dtype=torch.long)
         self.mode = mode
+        self.device = get_device()
         if use_aug and mode == MODE.TRAIN:
             self.transform = transforms.Compose([
                 transforms.RandomResizedCrop(512),
@@ -116,9 +118,9 @@ class RetinopathyDataset(Dataset):
     def _load_and_preprocess_image(self, img_path) -> tensor:
         """
         Load and preprocess image.
-        1. Load image by using PIL.
-        2. Convert the pixel value to [0, 1]
-        3. Transpose the image shape from [H, W, C] to [C, H, W]
+        1. Load image by using torchvision.io.read_image.
+           It is already [C, H, W] format and move to specific device.
+        2. Convert the pixel value to float and [0, 1]
 
         Args:
             img_path (str): Image path.
@@ -126,12 +128,8 @@ class RetinopathyDataset(Dataset):
         Returns:
             tensor: Preprocessed image.
         """
-        img = np.asarray(Image.open(img_path))
-        img_t = tensor(img)
-        img_t = img_t.type(torch.FloatTensor)
-        img_t /= 255.0
-        img_t = torch.transpose(img_t, 0, 2)
-        return img_t
+        img = read_image(img_path, mode=ImageReadMode.RGB).to(self.device)
+        return img.float().div(255)
 
     def get_labels(self) -> torch.Tensor:
         """
