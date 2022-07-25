@@ -146,7 +146,6 @@ def gen_loader(
     batch_size: int = 64,
     mode: str = MODE.TRAIN,
     use_aug: bool = False,
-    use_imbalanced_sampler: bool = False
 ) -> DataLoader:
     """
     Generate data loader.
@@ -156,7 +155,6 @@ def gen_loader(
         batch_size (int, optional): batch size. Defaults to 64.
         mode (str, optional): train or test. Defaults to MODE.TRAIN.
         use_aug (bool, optional): use augmentation. Defaults to False.
-        use_imbalanced_sampler (bool, optional): use imbalanced sampler. Defaults to False.
 
     Returns:
         DataLoader: data loader
@@ -165,8 +163,7 @@ def gen_loader(
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
-        shuffle=False if use_imbalanced_sampler or mode == MODE.TEST else True,
-        sampler=None if not use_imbalanced_sampler else ImbalancedDatasetSampler(dataset)
+        shuffle=True if mode == MODE.TRAIN else False,
     )
 
     return dataloader

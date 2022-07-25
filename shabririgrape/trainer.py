@@ -6,8 +6,6 @@ from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 
 from .model import get_model
-from .utils import convert_to_soft_label
-
 from . import DATASET, MODEL_TYPE, DEVICE_TYPE
 
 
@@ -133,7 +131,6 @@ class Trainer:
         optimizer: str = MODEL_TYPE.ADAM,
         loss: str = MODEL_TYPE.CROSS_ENTROPY,
         weight_decay: float = 0.0,
-        use_soft_label: bool = False,
         **kwargs
     ):
         """
@@ -146,7 +143,6 @@ class Trainer:
             optimizer (str): string of optimizer. Defaults to 'adam'.
             loss (str): string of loss function. Defaults to 'cross_entropy'.
             weight_decay (float, optional): weight decay. Defaults to 0.0.
-            use_soft_label (bool, optional): use soft label for ordinal regression. Defaults to False.
             **kwargs: keyword arguments
         """
         self.model_name = model_name
@@ -155,7 +151,6 @@ class Trainer:
         self.optimizer = optimizer
         self.lr = lr
         self.weight_decay = weight_decay
-        self.use_soft_label = use_soft_label
 
         self.device = get_device()
         self.collector = LossAndAccCollector(self.device)
@@ -258,12 +253,7 @@ class Trainer:
         Returns:
             float: loss
         """
-        if self.use_soft_label:
-            soft_target = convert_to_soft_label(target).to(self.device)
-            loss = self.loss_fn(output, soft_target)
-        else:
-            loss = self.loss_fn(output, target)
-        return loss
+        return self.loss_fn(output, target)
 
     def compute_confusion_matrix(self, output: torch.Tensor, target: torch.Tensor) -> ndarray:
         """

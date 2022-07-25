@@ -28,7 +28,6 @@ class ExperimentCfg:
         self.epochs = self.trainer.pop('epochs')
         self.batch_size = self.trainer.pop('batch_size')
         self.use_aug = self.trainer.pop('use_aug')
-        self.use_imbalanced_sampler = self.trainer.pop('use_imbalanced_sampler')
 
     def __repr__(self) -> str:
         """

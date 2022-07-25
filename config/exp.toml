@@ -3,11 +3,9 @@ model_name = "resnet50"
 pretrained_mode = "with"
 lr = 0.0001 
 weight_decay = 0.00001
-epochs = 30
-batch_size = 12
+epochs = 20
+batch_size = 32
 use_aug = true
-use_imbalanced_sampler = false
-use_soft_label = false
 
 [[experiment]]
 
@@ -15,7 +13,7 @@ name = "ResNet18_pretrained"
 enable = true
 model_name = "resnet18"
 experiment = "pretrained_mode"
-value = ["with", "without", "fixed"]
+value = ["with", "without"]
 
 [[experiment]]
 
@@ -23,21 +21,4 @@ name = "ResNet50_pretrained"
 enable = true
 model_name = "resnet50"
 experiment = "pretrained_mode"
-value = ["with", "without", "fixed"]
-
-[[experiment]]
-
-name = "ResNet50_with_imbalanced_sampler"
-enable = true
-model_name = "resnet50"
-experiment = "use_imbalanced_sampler"
-value = [true]
-
-[[experiment]]
-
-name = "ResNet50_with_soft_label"
-enable = true
-model_name = "resnet50"
-use_imbalanced_sampler = true
-experiment = "use_soft_label"
-value = [true]
+value = ["with", "without"]
