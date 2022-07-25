@@ -40,7 +40,7 @@ class ExperimentCfg:
 
 
 class ExperimentGroup:
-    def __init__(self, name: str, default_params: dict, exp_params: dict):
+    def __init__(self, name: str, default_params: dict, exp_params: dict, plot_within_group: bool = True):
         """
         Initialize the experiment group.
 
@@ -53,6 +53,7 @@ class ExperimentGroup:
         self.params = default_params
         self.exp_column = exp_params[CONFIG.EXPERIMENT]
         self.exp_value = exp_params[CONFIG.EXPERIMENT_VALUE]
+        self.plot_within_group = plot_within_group
         self._exp_results = {}
         self._gen = self.__generate()
 
@@ -89,10 +90,11 @@ class ExperimentGroup:
             cfg[self.exp_column] = exp_param
             yield ExperimentCfg(cfg, name=self.name, exp_value=exp_param)
         else:
-            plot_accuracy_curve_by_exp_group(
-                fname=f'{ARTIFACTS.RESULT}/{ARTIFACTS.LEARNING_CURVE}_{self.name}{ARTIFACTS.IMG_EXT}',
-                title=self.name, **self._exp_results
-            )
+            if self.plot_within_group:
+                plot_accuracy_curve_by_exp_group(
+                    fname=f'{ARTIFACTS.RESULT}/{ARTIFACTS.LEARNING_CURVE}_{self.name}{ARTIFACTS.IMG_EXT}',
+                    title=self.name, **self._exp_results
+                )
             return StopIteration
 
     @property
@@ -118,16 +120,18 @@ class ExperimentGroup:
 
 
 class ExperimentManager:
-    def __init__(self, config_filename: str):
+    def __init__(self, config_filename: str, plot_within_experiment_group: bool = True):
         """
         Initialize the experiment manager.
 
         Args:
             config_filename (str): configuration filename
+            plot_within_experiment_group (bool): plot within experiment group. Default: True
         """
         self.config_filename = config_filename
         self.load_and_parse_config()
         self.summary_result = dict()
+        self.plot_within_experiment_group = plot_within_experiment_group
 
     def __call__(self, function):
         """
@@ -187,4 +191,4 @@ class ExperimentManager:
             CONFIG.EXPERIMENT: experiment[CONFIG.EXPERIMENT],
             CONFIG.EXPERIMENT_VALUE: experiment[CONFIG.EXPERIMENT_VALUE]
         }
-        self.experiment_group = ExperimentGroup(name, default_params, exp_params)
+        self.experiment_group = ExperimentGroup(name, default_params, exp_params, self.plot_within_experiment_group)
