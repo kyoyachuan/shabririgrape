@@ -22,3 +22,12 @@ enable = true
 model_name = "resnet50"
 experiment = "pretrained_mode"
 value = ["with", "without"]
+
+[[experiment]]
+
+name = "train_without_augmentation"
+enable = true
+use_aug = false
+epochs = 10
+experiment = "model_name"
+value = ["resnet18", "resnet50"]
