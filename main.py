@@ -22,7 +22,7 @@ def main(cfg: ExperimentCfg) -> dict:
     train_data_container = get_data(MODE.TRAIN)
     test_data_container = get_data(MODE.TEST)
     train_loader = gen_loader(train_data_container, batch_size=cfg.batch_size, mode=MODE.TRAIN,
-                              use_aug=cfg.use_aug, use_imbalanced_sampler=cfg.use_imbalanced_sampler)
+                              use_aug=cfg.use_aug)
     test_loader = gen_loader(test_data_container, batch_size=cfg.batch_size, mode=MODE.TEST)
 
     trainer = Trainer(**cfg.trainer)
