@@ -180,7 +180,7 @@ class ExperimentManager:
             experiment (dict): experiment group
         """
         name = experiment[CONFIG.EXPERIMENT_NAME]
-        default_params = self.defaults
+        default_params = self.defaults.copy()
         for key in experiment.keys():
             if key in default_params:
                 default_params[key] = experiment[key]
