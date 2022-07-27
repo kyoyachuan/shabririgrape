@@ -131,15 +131,6 @@ class RetinopathyDataset(Dataset):
         img = read_image(img_path, mode=ImageReadMode.RGB).to(self.device)
         return img.float().div(255)
 
-    def get_labels(self) -> torch.Tensor:
-        """
-        Get labels.
-
-        Returns:
-            torch.Tensor: Labels.
-        """
-        return self.label
-
 
 def gen_loader(
     data_container: DRContainer,
