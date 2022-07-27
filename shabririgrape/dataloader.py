@@ -8,7 +8,6 @@ from torch import tensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.io import read_image, ImageReadMode
-from torchsampler import ImbalancedDatasetSampler
 
 from . import DATASET, MODE
 from .trainer import get_device
